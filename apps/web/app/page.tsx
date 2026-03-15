@@ -43,12 +43,24 @@ export default function HomePage() {
   const messagesRef = useRef<HTMLDivElement>(null);
 
   const activeChat = useMemo(() => chats.find((chat) => chat.id === activeChatId), [activeChatId, chats]);
+  const hasIndexedDocument = useMemo(
+    () => documents.some((doc) => doc.status === "indexed"),
+    [documents]
+  );
 
   useEffect(() => {
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (!token || !activeChatId) return;
+    const timer = setInterval(() => {
+      void loadDocuments(activeChatId, token);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [token, activeChatId]);
 
   async function handleSignup(event: FormEvent) {
     event.preventDefault();
@@ -133,7 +145,7 @@ export default function HomePage() {
 
   async function sendMessage(event: FormEvent) {
     event.preventDefault();
-    if (!token || !activeChatId || !prompt.trim() || sending) return;
+    if (!token || !activeChatId || !prompt.trim() || sending || !hasIndexedDocument) return;
     const input = prompt.trim();
     setPrompt("");
     setError("");
@@ -322,6 +334,11 @@ export default function HomePage() {
         </section>
 
         <footer className="composer">
+          {!hasIndexedDocument && (
+            <p className="muted" style={{ margin: "0 0 8px" }}>
+              Wait until at least one uploaded document shows <b>indexed</b> before sending questions.
+            </p>
+          )}
           <form onSubmit={sendMessage} className="composer-row">
             <textarea
               rows={3}
@@ -329,7 +346,7 @@ export default function HomePage() {
               placeholder="Ask anything about your uploaded documents..."
               onChange={(e) => setPrompt(e.target.value)}
             />
-            <button type="submit" disabled={sending}>
+            <button type="submit" disabled={sending || !hasIndexedDocument}>
               {sending ? "Sending..." : "Send"}
             </button>
           </form>
@@ -338,4 +355,3 @@ export default function HomePage() {
     </main>
   );
 }
-
