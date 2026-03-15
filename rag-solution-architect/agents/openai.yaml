@@ -1,0 +1,4 @@
+interface:
+  display_name: "RAG Architect"
+  short_description: "Designs production-grade local-first RAG systems."
+  default_prompt: "Design a robust local-first open-source RAG chatbot architecture and rollout plan."

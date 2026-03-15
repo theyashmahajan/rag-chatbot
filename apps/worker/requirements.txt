@@ -1,0 +1,11 @@
+celery==5.4.0
+redis==5.2.1
+sqlalchemy==2.0.39
+psycopg[binary]==3.2.6
+pydantic-settings==2.8.1
+qdrant-client==1.13.3
+httpx==0.28.1
+pypdf==5.4.0
+python-docx==1.1.2
+pillow==11.1.0
+pytesseract==0.3.13
