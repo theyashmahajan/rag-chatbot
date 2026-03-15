@@ -120,6 +120,24 @@ export default function HomePage() {
     setDocuments([]);
   }
 
+  async function deleteChat(chatId: string) {
+    if (!token) return;
+    await apiRequest<void>(`/chats/${chatId}`, { method: "DELETE" }, token);
+    const nextChats = chats.filter((chat) => chat.id !== chatId);
+    setChats(nextChats);
+    if (activeChatId === chatId) {
+      if (nextChats[0]) {
+        setActiveChatId(nextChats[0].id);
+        await loadMessages(nextChats[0].id);
+        await loadDocuments(nextChats[0].id);
+      } else {
+        setActiveChatId("");
+        setMessages([]);
+        setDocuments([]);
+      }
+    }
+  }
+
   async function loadMessages(chatId: string, authToken: string = token) {
     const data = await apiRequest<Message[]>(`/chats/${chatId}/messages`, {}, authToken);
     setMessages(data);
@@ -286,17 +304,25 @@ export default function HomePage() {
         </p>
         <div className="chat-list">
           {chats.map((chat) => (
-            <button
-              key={chat.id}
-              className={`chat-item ${chat.id === activeChatId ? "active" : ""}`}
-              onClick={() => {
-                setActiveChatId(chat.id);
-                void loadMessages(chat.id);
-                void loadDocuments(chat.id);
-              }}
-            >
-              {chat.title}
-            </button>
+            <div key={chat.id} className="chat-row">
+              <button
+                className={`chat-item ${chat.id === activeChatId ? "active" : ""}`}
+                onClick={() => {
+                  setActiveChatId(chat.id);
+                  void loadMessages(chat.id);
+                  void loadDocuments(chat.id);
+                }}
+              >
+                {chat.title}
+              </button>
+              <button
+                className="chat-delete"
+                title="Delete chat"
+                onClick={() => void deleteChat(chat.id)}
+              >
+                x
+              </button>
+            </div>
           ))}
         </div>
       </aside>

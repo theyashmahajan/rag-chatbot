@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     qdrant_url: str = "http://localhost:6333"
     ollama_url: str = "http://localhost:11434"
     ollama_model: str = "qwen2.5:7b-instruct"
+    ollama_fallback_models: str = "qwen2.5:0.5b,qwen2.5:3b-instruct"
     embedding_model: str = "nomic-embed-text"
     qdrant_collection: str = "document_chunks"
     file_storage_path: str = "./storage"
@@ -30,6 +31,18 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def ollama_model_candidates(self) -> list[str]:
+        models = [self.ollama_model.strip()]
+        models.extend(
+            [item.strip() for item in self.ollama_fallback_models.split(",") if item.strip()]
+        )
+        deduped: list[str] = []
+        for model in models:
+            if model and model not in deduped:
+                deduped.append(model)
+        return deduped
 
 
 @lru_cache

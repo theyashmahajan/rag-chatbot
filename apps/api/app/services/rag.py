@@ -113,32 +113,51 @@ def _build_llm_prompt(question: str, contexts: list[dict[str, Any]]) -> str:
 
 def _generate_with_ollama(prompt: str) -> str:
     settings = get_settings()
+    tried_models: list[str] = []
     with httpx.Client(timeout=120.0) as client:
-        response = client.post(
-            f"{settings.ollama_url}/api/generate",
-            json={"model": settings.ollama_model, "prompt": prompt, "stream": False},
-        )
-        response.raise_for_status()
-        payload = response.json()
-        return str(payload.get("response", "")).strip()
+        for model in settings.ollama_model_candidates:
+            tried_models.append(model)
+            response = client.post(
+                f"{settings.ollama_url}/api/generate",
+                json={"model": model, "prompt": prompt, "stream": False},
+            )
+            if response.status_code == 404:
+                continue
+            response.raise_for_status()
+            payload = response.json()
+            return str(payload.get("response", "")).strip()
+    raise RuntimeError(
+        "No available Ollama generation model found. "
+        f"Tried: {', '.join(tried_models)}. Pull one of these models in Ollama."
+    )
 
 
 def stream_generate_with_ollama(prompt: str) -> Iterator[str]:
     settings = get_settings()
+    tried_models: list[str] = []
     with httpx.Client(timeout=300.0) as client:
-        with client.stream(
-            "POST",
-            f"{settings.ollama_url}/api/generate",
-            json={"model": settings.ollama_model, "prompt": prompt, "stream": True},
-        ) as response:
-            response.raise_for_status()
-            for line in response.iter_lines():
-                if not line:
+        for model in settings.ollama_model_candidates:
+            tried_models.append(model)
+            with client.stream(
+                "POST",
+                f"{settings.ollama_url}/api/generate",
+                json={"model": model, "prompt": prompt, "stream": True},
+            ) as response:
+                if response.status_code == 404:
                     continue
-                payload = json.loads(line)
-                token = str(payload.get("response", ""))
-                if token:
-                    yield token
+                response.raise_for_status()
+                for line in response.iter_lines():
+                    if not line:
+                        continue
+                    payload = json.loads(line)
+                    token = str(payload.get("response", ""))
+                    if token:
+                        yield token
+                return
+    raise RuntimeError(
+        "No available Ollama generation model found. "
+        f"Tried: {', '.join(tried_models)}. Pull one of these models in Ollama."
+    )
 
 
 def generate_assistant_answer(db: Session, user_id: str, chat_id: str, prompt: str) -> tuple[str, list[dict[str, Any]]]:

@@ -47,7 +47,7 @@ services:
       context: ../..
       dockerfile: apps/api/Dockerfile
     env_file:
-      - ../../.env.example
+      - ../../.env
     environment:
       DATABASE_URL: postgresql+psycopg://appuser:apppass@postgres:5432/ragdb
       REDIS_URL: redis://redis:6379/0
@@ -70,7 +70,7 @@ services:
       context: ../..
       dockerfile: apps/worker/Dockerfile
     env_file:
-      - ../../.env.example
+      - ../../.env
     environment:
       DATABASE_URL: postgresql+psycopg://appuser:apppass@postgres:5432/ragdb
       REDIS_URL: redis://redis:6379/0

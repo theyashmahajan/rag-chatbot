@@ -32,3 +32,12 @@ def get_chat(chat_id: str, db: Session = Depends(get_db), user: User = Depends(g
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
     return chat
 
+
+@router.delete("/{chat_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_chat(chat_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> None:
+    chat = db.scalar(select(Chat).where(Chat.id == chat_id, Chat.user_id == user.id))
+    if not chat:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found")
+    db.delete(chat)
+    db.commit()
+    return None

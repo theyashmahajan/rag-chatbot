@@ -88,17 +88,34 @@ body {
   padding-right: 4px;
 }
 
+.chat-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
 .chat-item {
   background: rgba(255, 255, 255, 0.08);
   color: #eaf2ff;
   border: 1px solid rgba(255, 255, 255, 0.1);
   text-align: left;
+  width: 100%;
 }
 
 .chat-item.active {
   background: linear-gradient(90deg, var(--brand), var(--brand-2));
   color: #fff;
   border-color: transparent;
+}
+
+.chat-delete {
+  padding: 10px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffdce0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  line-height: 1;
 }
 
 .main-shell {
