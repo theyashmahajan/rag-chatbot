@@ -6,12 +6,12 @@ export async function apiRequest<T>(
   token?: string
 ): Promise<T> {
   const isFormData = options.body instanceof FormData;
-  const headers: HeadersInit = { ...(options.headers || {}) };
+  const headers = new Headers(options.headers || {});
   if (!isFormData) {
-    headers["Content-Type"] = "application/json";
+    headers.set("Content-Type", "application/json");
   }
   if (token) {
-    headers.Authorization = `Bearer ${token}`;
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
   const response = await fetch(`${API_URL}${path}`, {

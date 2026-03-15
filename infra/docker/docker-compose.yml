@@ -92,6 +92,8 @@ services:
       dockerfile: apps/web/Dockerfile
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
+    volumes:
+      - ../../apps/web:/app/apps/web
     ports:
       - "3000:3000"
     depends_on:

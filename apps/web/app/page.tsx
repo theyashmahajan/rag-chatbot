@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { API_URL, apiRequest } from "../lib/api";
 
 type AuthResponse = {
@@ -21,11 +21,6 @@ type Message = {
   created_at: string;
 };
 
-type ChatResponse = {
-  user_message: Message;
-  assistant_message: Message;
-};
-
 type DocumentItem = {
   id: string;
   file_name: string;
@@ -44,11 +39,16 @@ export default function HomePage() {
   const [prompt, setPrompt] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [sending, setSending] = useState(false);
+  const messagesRef = useRef<HTMLDivElement>(null);
 
-  const activeChat = useMemo(
-    () => chats.find((chat) => chat.id === activeChatId),
-    [activeChatId, chats]
-  );
+  const activeChat = useMemo(() => chats.find((chat) => chat.id === activeChatId), [activeChatId, chats]);
+
+  useEffect(() => {
+    if (messagesRef.current) {
+      messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   async function handleSignup(event: FormEvent) {
     event.preventDefault();
@@ -98,7 +98,7 @@ export default function HomePage() {
     if (!token) return;
     const chat = await apiRequest<Chat>(
       "/chats",
-      { method: "POST", body: JSON.stringify({ title: "New Chat" }) },
+      { method: "POST", body: JSON.stringify({ title: `Chat ${chats.length + 1}` }) },
       token
     );
     const nextChats = [chat, ...chats];
@@ -133,10 +133,11 @@ export default function HomePage() {
 
   async function sendMessage(event: FormEvent) {
     event.preventDefault();
-    if (!token || !activeChatId || !prompt.trim()) return;
-    const input = prompt;
+    if (!token || !activeChatId || !prompt.trim() || sending) return;
+    const input = prompt.trim();
     setPrompt("");
     setError("");
+    setSending(true);
 
     const now = new Date().toISOString();
     const userMsg: Message = {
@@ -196,41 +197,41 @@ export default function HomePage() {
               )
             );
           }
+
           if (payload.type === "citations" && payload.citations?.length) {
             const sources = payload.citations
-              .map(
-                (c) =>
-                  `${c.file_name} (chunk ${c.chunk_index}, score=${Number(c.score).toFixed(4)})`
-              )
+              .map((c) => `${c.file_name} (chunk ${c.chunk_index}, score=${Number(c.score).toFixed(4)})`)
               .join("\n");
             setMessages((prev) =>
               prev.map((msg) =>
-                msg.id === assistantId
-                  ? { ...msg, content: `${msg.content}\n\nSources:\n${sources}` }
-                  : msg
+                msg.id === assistantId ? { ...msg, content: `${msg.content}\n\nSources:\n${sources}` } : msg
               )
             );
           }
+
           if (payload.type === "error" && payload.message) {
             setError(payload.message);
           }
         }
       }
       await loadMessages(activeChatId);
+      await loadDocuments(activeChatId);
     } catch (e) {
       setError(String(e));
+    } finally {
+      setSending(false);
     }
   }
 
-  return (
-    <main>
-      <h1>Local-First RAG Chatbot</h1>
-      <p className="muted">Milestone 0 scaffold: auth, chats, and message flow are live.</p>
-      {error && <p style={{ color: "#b91c1c" }}>{error}</p>}
-
-      {!token && (
-        <section className="card">
-          <h2>Auth</h2>
+  if (!token) {
+    return (
+      <main className="auth-shell">
+        <section className="auth-card">
+          <h1 className="auth-title">Local-First RAG Chatbot</h1>
+          <p className="auth-sub">
+            Private document chat with local storage, retrieval, and open-source models.
+          </p>
+          {error && <p className="error">{error}</p>}
           <form onSubmit={handleSignup}>
             <label>
               Email
@@ -244,87 +245,97 @@ export default function HomePage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </label>
-            <button type="submit" disabled={busy}>
-              Sign Up + Login
+            <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+              <button type="submit" disabled={busy}>
+                Sign Up + Login
+              </button>
+              <button
+                className="secondary"
+                type="button"
+                disabled={busy}
+                onClick={() => void handleLogin()}
+              >
+                Login
+              </button>
+            </div>
+          </form>
+        </section>
+      </main>
+    );
+  }
+
+  return (
+    <main className="app-shell">
+      <aside className="sidebar">
+        <h2 className="sidebar-title">Conversations</h2>
+        <button onClick={() => void createChat()}>+ New Chat</button>
+        <p className="muted" style={{ color: "#c6d4ef", margin: "10px 0 8px" }}>
+          {chats.length} chat(s)
+        </p>
+        <div className="chat-list">
+          {chats.map((chat) => (
+            <button
+              key={chat.id}
+              className={`chat-item ${chat.id === activeChatId ? "active" : ""}`}
+              onClick={() => {
+                setActiveChatId(chat.id);
+                void loadMessages(chat.id);
+                void loadDocuments(chat.id);
+              }}
+            >
+              {chat.title}
+            </button>
+          ))}
+        </div>
+      </aside>
+
+      <section className="main-shell">
+        <header className="main-head">
+          <h1 className="main-title">{activeChat ? activeChat.title : "Select a chat"}</h1>
+          <p className="main-sub">Upload up to 4 documents per chat and ask grounded questions.</p>
+        </header>
+
+        <section className="doc-panel">
+          <input
+            type="file"
+            onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+            style={{ maxWidth: 280 }}
+          />
+          <button className="ghost" disabled={!uploadFile} type="button" onClick={() => void uploadDocument()}>
+            Upload
+          </button>
+          {documents.map((doc) => (
+            <span key={doc.id} className="doc-chip">
+              {doc.file_name} - {doc.status}
+            </span>
+          ))}
+        </section>
+
+        {error && <p className="error" style={{ margin: "12px 18px 0" }}>{error}</p>}
+
+        <section ref={messagesRef} className="messages">
+          {messages.map((message) => (
+            <article key={message.id} className={`bubble ${message.role === "user" ? "user" : "assistant"}`}>
+              {message.content || (message.role === "assistant" ? "Thinking..." : "")}
+            </article>
+          ))}
+        </section>
+
+        <footer className="composer">
+          <form onSubmit={sendMessage} className="composer-row">
+            <textarea
+              rows={3}
+              value={prompt}
+              placeholder="Ask anything about your uploaded documents..."
+              onChange={(e) => setPrompt(e.target.value)}
+            />
+            <button type="submit" disabled={sending}>
+              {sending ? "Sending..." : "Send"}
             </button>
           </form>
-          <button
-            style={{ marginTop: 8, background: "#334155" }}
-            disabled={busy}
-            onClick={() => void handleLogin()}
-          >
-            Login
-          </button>
-        </section>
-      )}
-
-      {token && (
-        <section className="grid">
-          <aside className="card">
-            <h2>Chats</h2>
-            <button onClick={() => void createChat()}>Create Chat</button>
-            <div style={{ marginTop: 12 }}>
-              {chats.map((chat) => (
-                <button
-                  key={chat.id}
-                  style={{
-                    marginTop: 6,
-                    background: chat.id === activeChatId ? "#0f766e" : "#475569",
-                  }}
-                  onClick={() => {
-                    setActiveChatId(chat.id);
-                    void loadMessages(chat.id);
-                    void loadDocuments(chat.id);
-                  }}
-                >
-                  {chat.title}
-                </button>
-              ))}
-            </div>
-          </aside>
-
-          <section className="card">
-            <h2>{activeChat ? activeChat.title : "Select a chat"}</h2>
-            <div className="card" style={{ marginBottom: 12 }}>
-              <h3>Documents</h3>
-              <p className="muted">Upload up to 4 files per chat.</p>
-              <input
-                type="file"
-                onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-              />
-              <button
-                style={{ marginTop: 8, background: "#1d4ed8" }}
-                disabled={!uploadFile}
-                onClick={() => void uploadDocument()}
-                type="button"
-              >
-                Upload
-              </button>
-              {documents.map((doc) => (
-                <p key={doc.id} className="muted">
-                  {doc.file_name} ({doc.status})
-                </p>
-              ))}
-            </div>
-            <div style={{ minHeight: 220 }}>
-              {messages.map((message) => (
-                <p key={message.id}>
-                  <strong>{message.role}:</strong> {message.content}
-                </p>
-              ))}
-            </div>
-            <form onSubmit={sendMessage}>
-              <textarea
-                rows={4}
-                value={prompt}
-                placeholder="Ask your question about uploaded documents..."
-                onChange={(e) => setPrompt(e.target.value)}
-              />
-              <button type="submit">Send</button>
-            </form>
-          </section>
-        </section>
-      )}
+        </footer>
+      </section>
     </main>
   );
 }
+
