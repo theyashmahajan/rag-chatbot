@@ -21,22 +21,22 @@ def _embed_text(text: str) -> list[float]:
             f"{settings.ollama_url}/api/embed",
             json={"model": settings.embedding_model, "input": text},
         )
-        if response.is_success:
-            payload = response.json()
-            if isinstance(payload.get("embeddings"), list) and payload["embeddings"]:
-                first = payload["embeddings"][0]
-                if isinstance(first, list):
-                    return [float(v) for v in first]
-                return [float(v) for v in payload["embeddings"]]
-
-        fallback = client.post(
-            f"{settings.ollama_url}/api/embeddings",
-            json={"model": settings.embedding_model, "prompt": text},
+        if not response.is_success:
+            details = response.text
+            raise RuntimeError(
+                f"Embedding request failed ({response.status_code}). "
+                f"Ensure model '{settings.embedding_model}' is pulled in Ollama. Details: {details}"
+            )
+        payload = response.json()
+        embeddings = payload.get("embeddings")
+        if isinstance(embeddings, list) and embeddings:
+            first = embeddings[0]
+            if isinstance(first, list):
+                return [float(v) for v in first]
+            return [float(v) for v in embeddings]
+        raise RuntimeError(
+            f"Embedding response format unexpected for model '{settings.embedding_model}'."
         )
-        fallback.raise_for_status()
-        fb_payload = fallback.json()
-        vector = fb_payload.get("embedding", [])
-        return [float(v) for v in vector]
 
 
 def retrieve_contexts(user_id: str, chat_id: str, prompt: str, top_k: int = 5) -> list[dict[str, Any]]:
@@ -150,10 +150,12 @@ def prepare_streaming_answer(
     if not doc_count:
         return (iter(["No documents found in this chat yet. Upload documents first."]), [])
 
-    contexts = retrieve_contexts(user_id=user_id, chat_id=chat_id, prompt=prompt, top_k=5)
+    try:
+        contexts = retrieve_contexts(user_id=user_id, chat_id=chat_id, prompt=prompt, top_k=5)
+    except Exception as exc:  # noqa: BLE001
+        return (iter([f"Retrieval failed: {exc}"]), [])
     if not contexts:
         return (iter(["No relevant indexed context found. Try re-uploading documents or asking a specific question."]), [])
 
     llm_prompt = _build_llm_prompt(prompt, contexts)
     return (stream_generate_with_ollama(llm_prompt), contexts)
-

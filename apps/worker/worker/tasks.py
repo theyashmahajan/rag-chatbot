@@ -62,22 +62,22 @@ def _embed_text(text: str) -> list[float]:
             f"{settings.ollama_url}/api/embed",
             json={"model": settings.embedding_model, "input": text},
         )
-        if response.is_success:
-            payload = response.json()
-            if isinstance(payload.get("embeddings"), list) and payload["embeddings"]:
-                first = payload["embeddings"][0]
-                if isinstance(first, list):
-                    return [float(v) for v in first]
-                return [float(v) for v in payload["embeddings"]]
-
-        fallback = client.post(
-            f"{settings.ollama_url}/api/embeddings",
-            json={"model": settings.embedding_model, "prompt": text},
+        if not response.is_success:
+            details = response.text
+            raise RuntimeError(
+                f"Embedding request failed ({response.status_code}). "
+                f"Ensure model '{settings.embedding_model}' is pulled in Ollama. Details: {details}"
+            )
+        payload = response.json()
+        embeddings = payload.get("embeddings")
+        if isinstance(embeddings, list) and embeddings:
+            first = embeddings[0]
+            if isinstance(first, list):
+                return [float(v) for v in first]
+            return [float(v) for v in embeddings]
+        raise RuntimeError(
+            f"Embedding response format unexpected for model '{settings.embedding_model}'."
         )
-        fallback.raise_for_status()
-        fb_payload = fallback.json()
-        vector = fb_payload.get("embedding", [])
-        return [float(v) for v in vector]
 
 
 def _ensure_collection(qdrant: QdrantClient, vector_size: int) -> None:
@@ -162,4 +162,3 @@ def process_document(document_id: str) -> dict[str, str]:
         return {"document_id": document_id, "status": "failed"}
     finally:
         db.close()
-
