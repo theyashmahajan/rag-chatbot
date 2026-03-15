@@ -1,0 +1,81 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#edf3ff"/>
+      <stop offset="100%" stop-color="#e8f9ff"/>
+    </linearGradient>
+    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+    <style>
+      .title { font: 700 58px 'Segoe UI', Arial, sans-serif; fill: #ffffff; }
+      .subtitle { font: 500 29px 'Segoe UI', Arial, sans-serif; fill: #dbeafe; }
+      .section { font: 700 24px 'Segoe UI', Arial, sans-serif; fill: #0f172a; }
+      .box-title { font: 700 21px 'Segoe UI', Arial, sans-serif; fill: #0f172a; }
+      .box-text { font: 500 18px 'Segoe UI', Arial, sans-serif; fill: #1f2937; }
+      .small { font: 500 16px 'Segoe UI', Arial, sans-serif; fill: #475569; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="900" fill="url(#bg)"/>
+
+  <rect x="40" y="24" rx="20" ry="20" width="1520" height="138" fill="url(#hero)"/>
+  <text x="82" y="94" class="title">Document Intelligence Assistant</text>
+  <text x="82" y="134" class="subtitle">Local-first, open-source, no paid API keys required</text>
+
+  <text x="60" y="228" class="section">Client Layer</text>
+  <text x="460" y="228" class="section">Application Layer</text>
+  <text x="900" y="228" class="section">AI + Data Layer</text>
+
+  <rect x="60" y="248" width="310" height="138" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="84" y="292" class="box-title">Web App (Next.js)</text>
+  <text x="84" y="326" class="box-text">Auth, chat UI, upload UI,</text>
+  <text x="84" y="354" class="box-text">streaming responses</text>
+
+  <rect x="460" y="248" width="390" height="182" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="484" y="292" class="box-title">API (FastAPI)</text>
+  <text x="484" y="326" class="box-text">JWT auth, chats, documents,</text>
+  <text x="484" y="354" class="box-text">RAG retrieval + SSE stream</text>
+  <text x="484" y="382" class="box-text">rate limits + citations</text>
+
+  <rect x="460" y="456" width="390" height="138" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="484" y="500" class="box-title">Worker (Celery)</text>
+  <text x="484" y="534" class="box-text">Parse files, chunk text,</text>
+  <text x="484" y="562" class="box-text">embed + index vectors</text>
+
+  <rect x="900" y="248" width="640" height="138" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="924" y="292" class="box-title">Ollama (Local Models)</text>
+  <text x="924" y="324" class="box-text">Generation: qwen2.5:0.5b / 3b</text>
+  <text x="924" y="352" class="box-text">Embeddings: nomic-embed-text</text>
+  <text x="924" y="376" class="small">Runs fully local on your machine</text>
+
+  <rect x="900" y="410" width="305" height="176" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="924" y="456" class="box-title">PostgreSQL</text>
+  <text x="924" y="490" class="box-text">Users, chats, messages,</text>
+  <text x="924" y="518" class="box-text">documents, chunks</text>
+
+  <rect x="1235" y="410" width="305" height="176" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="1259" y="456" class="box-title">Qdrant</text>
+  <text x="1259" y="490" class="box-text">Vector index for</text>
+  <text x="1259" y="518" class="box-text">semantic retrieval</text>
+
+  <rect x="900" y="610" width="640" height="126" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="924" y="656" class="box-title">Redis + Local Storage</text>
+  <text x="924" y="688" class="box-text">Queue broker + raw uploaded files (stays with you)</text>
+
+  <line x1="370" y1="316" x2="460" y2="316" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="850" y1="316" x2="900" y2="316" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="655" y1="430" x2="655" y2="456" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="850" y1="525" x2="900" y2="525" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="1090" y1="386" x2="1090" y2="410" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+  <line x1="1325" y1="386" x2="1325" y2="410" stroke="#334155" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <rect x="60" y="760" width="1480" height="114" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="84" y="804" class="box-title">Core Promise</text>
+  <text x="84" y="838" class="box-text">No paid API key required • Runs locally • Your files remain on your system • Upload, index, and chat with your documents</text>
+</svg>
+

@@ -10,6 +10,8 @@ All core data stays local: uploaded files, chunk text, vectors, chats, and auth 
 
 ## Architecture
 
+![Architecture](docs/linkedin-architecture.svg)
+
 - `apps/web`: chat UI, auth UI, document upload UI, streaming response UI
 - `apps/api`: auth, chats, upload, retrieval, response generation, SSE stream endpoint
 - `apps/worker`: async ingestion (extract text, chunk, embed, upsert to Qdrant)
@@ -151,4 +153,3 @@ docker compose -f infra/docker/docker-compose.yml logs -f worker
 docker compose -f infra/docker/docker-compose.yml logs -f web
 docker compose -f infra/docker/docker-compose.yml logs -f ollama
 ```
-
