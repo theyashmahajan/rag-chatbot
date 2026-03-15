@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from uuid import NAMESPACE_URL, uuid5
 
 import httpx
 from docx import Document as DocxDocument
@@ -118,7 +119,8 @@ def _upsert_vectors(doc: Document, chunks: list[str]) -> None:
         }
         points.append(
             qmodels.PointStruct(
-                id=f"{doc.id}:{idx}",
+                # Qdrant accepts numeric or UUID point ids. Use stable UUIDv5 per chunk.
+                id=str(uuid5(NAMESPACE_URL, f"{doc.id}:{idx}")),
                 vector=vector,
                 payload=payload,
             )
@@ -154,7 +156,8 @@ def process_document(document_id: str) -> dict[str, str]:
         doc.status = "indexed"
         db.commit()
         return {"document_id": document_id, "status": "indexed"}
-    except Exception:
+    except Exception as exc:
+        print(f"[ingestion] document_id={document_id} failed: {exc}")
         failed_doc = db.scalar(select(Document).where(Document.id == document_id))
         if failed_doc:
             failed_doc.status = "failed"

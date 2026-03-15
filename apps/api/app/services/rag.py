@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.models.document import Document
+from app.models.document_chunk import DocumentChunk
 
 
 def _embed_text(text: str) -> list[float]:
@@ -68,6 +69,27 @@ def retrieve_contexts(user_id: str, chat_id: str, prompt: str, top_k: int = 5) -
             }
         )
     return results
+
+
+def _fallback_contexts_from_db(db: Session, user_id: str, chat_id: str, top_k: int = 5) -> list[dict[str, Any]]:
+    rows = list(
+        db.execute(
+            select(DocumentChunk.text, Document.file_name, DocumentChunk.chunk_index)
+            .join(Document, Document.id == DocumentChunk.document_id)
+            .where(Document.user_id == user_id, Document.chat_id == chat_id, Document.status == "indexed")
+            .order_by(DocumentChunk.chunk_index.asc())
+            .limit(top_k)
+        )
+    )
+    return [
+        {
+            "text": str(text),
+            "file_name": str(file_name),
+            "chunk_index": int(chunk_index),
+            "score": 0.0,
+        }
+        for text, file_name, chunk_index in rows
+    ]
 
 
 def _build_llm_prompt(question: str, contexts: list[dict[str, Any]]) -> str:
@@ -129,9 +151,13 @@ def generate_assistant_answer(db: Session, user_id: str, chat_id: str, prompt: s
     try:
         contexts = retrieve_contexts(user_id=user_id, chat_id=chat_id, prompt=prompt, top_k=5)
     except Exception as exc:  # noqa: BLE001
-        return (f"Retrieval failed: {exc}", [])
+        contexts = _fallback_contexts_from_db(db=db, user_id=user_id, chat_id=chat_id, top_k=5)
+        if not contexts:
+            return (f"Retrieval failed: {exc}", [])
     if not contexts:
-        return ("No relevant indexed context found. Try re-uploading documents or asking a specific question.", [])
+        contexts = _fallback_contexts_from_db(db=db, user_id=user_id, chat_id=chat_id, top_k=5)
+        if not contexts:
+            return ("No relevant indexed context found. Try re-uploading documents or asking a specific question.", [])
 
     llm_prompt = _build_llm_prompt(prompt, contexts)
     try:
@@ -153,9 +179,16 @@ def prepare_streaming_answer(
     try:
         contexts = retrieve_contexts(user_id=user_id, chat_id=chat_id, prompt=prompt, top_k=5)
     except Exception as exc:  # noqa: BLE001
-        return (iter([f"Retrieval failed: {exc}"]), [])
+        contexts = _fallback_contexts_from_db(db=db, user_id=user_id, chat_id=chat_id, top_k=5)
+        if not contexts:
+            return (iter([f"Retrieval failed: {exc}"]), [])
     if not contexts:
-        return (iter(["No relevant indexed context found. Try re-uploading documents or asking a specific question."]), [])
+        contexts = _fallback_contexts_from_db(db=db, user_id=user_id, chat_id=chat_id, top_k=5)
+        if not contexts:
+            return (
+                iter(["No relevant indexed context found. Try re-uploading documents or asking a specific question."]),
+                [],
+            )
 
     llm_prompt = _build_llm_prompt(prompt, contexts)
     return (stream_generate_with_ollama(llm_prompt), contexts)
