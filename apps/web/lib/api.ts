@@ -24,5 +24,24 @@ export async function apiRequest<T>(
     const text = await response.text();
     throw new Error(text || `Request failed with ${response.status}`);
   }
-  return response.json() as Promise<T>;
+
+  // Some endpoints (e.g., DELETE) intentionally return 204 with empty body.
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return response.json() as Promise<T>;
+  }
+
+  const text = await response.text();
+  if (!text) {
+    return undefined as T;
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return text as T;
+  }
 }
