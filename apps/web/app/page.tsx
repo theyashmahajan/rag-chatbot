@@ -257,7 +257,7 @@ export default function HomePage() {
     return (
       <main className="auth-shell">
         <section className="auth-card">
-          <h1 className="auth-title">Local-First RAG Chatbot</h1>
+          <h1 className="auth-title">Document Intelligence Assistant</h1>
           <p className="auth-sub">
             Private document chat with local storage, retrieval, and open-source models.
           </p>

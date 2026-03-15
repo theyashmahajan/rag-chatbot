@@ -1,4 +1,4 @@
-# Local-First RAG Chatbot
+# Document Intelligence Assistant
 
 Production-oriented, self-hosted RAG chatbot with:
 - Next.js web app
@@ -26,8 +26,8 @@ All core data stays local: uploaded files, chunk text, vectors, chats, and auth 
 
 1. Clone repo
 ```powershell
-git clone <your-repo-url>
-cd ResearchPaperAnalysis
+git clone https://github.com/theyashmahajan/rag-chatbot.git
+cd rag-chatbot
 ```
 
 2. Create environment file
@@ -151,8 +151,4 @@ docker compose -f infra/docker/docker-compose.yml logs -f worker
 docker compose -f infra/docker/docker-compose.yml logs -f web
 docker compose -f infra/docker/docker-compose.yml logs -f ollama
 ```
-
-## Git Workflow (Current)
-
-I am committing each major step with clear messages so history stays clean and traceable.
 
